@@ -1,0 +1,830 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Aldea de Luminaria</title>
+<style>
+:root {
+  --sky:#e9faff; --blue:#19a8d2; --deep:#17627f;
+  --cream:#fffdf4; --pink:#ff4f91; --yellow:#ffd21f;
+  --green:#36bd65; --orange:#ff7a24; --ink:#263746;
+  --purple:#8652db;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0; font-family:"Trebuchet MS",Arial,sans-serif;
+  color:var(--ink); background:var(--sky);
+}
+button,select,textarea { font:inherit; }
+button { cursor:pointer; transition:transform .16s,filter .16s; }
+button:hover { transform:translateY(-2px); filter:brightness(1.04); }
+button:focus-visible,select:focus-visible,textarea:focus-visible {
+  outline:3px solid var(--deep); outline-offset:3px;
+}
+.screen { display:none; min-height:100vh; padding:20px 14px 35px; }
+.screen.active { display:flex; align-items:center; justify-content:center; }
+.panel {
+  width:min(960px,100%); background:var(--cream); border:4px solid white;
+  border-radius:28px; padding:clamp(18px,4vw,34px);
+  box-shadow:0 8px 0 #8ad8e7;
+}
+.center { text-align:center; }
+h1 { font-size:clamp(2.4rem,8vw,4.7rem); color:var(--deep); line-height:1; margin:10px 0; }
+h2 { color:var(--deep); }
+p { line-height:1.6; }
+.eyebrow {
+  display:inline-block; padding:8px 14px; border-radius:25px;
+  background:#ffe14d; font-size:.8rem; font-weight:bold; letter-spacing:1px;
+}
+.primary {
+  background:var(--deep); color:white; font-weight:bold;
+  padding:14px 23px; border-radius:16px; box-shadow:0 4px 0 #0d4056; margin:5px;
+}
+.secondary {
+  background:white; color:var(--deep); border:2px solid #a5dfe8;
+  padding:10px 15px; border-radius:13px; margin:4px;
+}
+.hero { background:#dff8ff; border-radius:24px; padding:16px; margin:18px 0; }
+.character-stage {
+  min-height:270px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+  background:
+  radial-gradient(circle at 15% 20%,#ff4f91 0 22px,transparent 23px),
+  radial-gradient(circle at 85% 20%,#ffd21f 0 17px,transparent 18px),
+  radial-gradient(circle at 80% 80%,#36bd65 0 26px,transparent 27px),
+  radial-gradient(circle at 20% 85%,#19a8d2 0 16px,transparent 17px);
+}
+.character-svg {
+  width:min(245px,70%); height:auto; overflow:visible;
+  filter:drop-shadow(0 6px 2px #b4d4d9);
+}
+.customizer {
+  background:white; border:2px solid #dcefe9; border-radius:22px;
+  padding:20px; margin:18px 0; text-align:left;
+}
+.custom-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin-top:16px; }
+.custom-grid label { display:flex; flex-direction:column; gap:7px; font-size:.9rem; font-weight:bold; }
+select {
+  width:100%; padding:11px 8px; border-radius:11px; border:2px solid #b8e3e8;
+  background:#fffdf6; color:var(--ink);
+}
+.color-options { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0; }
+.color-choice { width:35px; height:35px; border-radius:50%; border:3px solid white; outline:2px solid #d7e3df; }
+.color-choice.selected { outline:3px solid var(--deep); }
+.topbar {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  flex-wrap:wrap; padding:13px; border-radius:18px; background:var(--cream);
+  border:3px solid white; margin-bottom:15px;
+}
+.stat { background:white; border-radius:12px; padding:8px 12px; font-weight:bold; }
+.map {
+  position:relative; min-height:540px; overflow:hidden; border:4px solid white;
+  border-radius:25px; background-color:#48c95b;
+  background-image:
+  radial-gradient(ellipse at 15% 30%,#20b84d 0 8%,transparent 8.5%),
+  radial-gradient(ellipse at 80% 65%,#159f4b 0 10%,transparent 10.5%),
+  radial-gradient(ellipse at 55% 20%,#8be343 0 7%,transparent 7.5%),
+  radial-gradient(ellipse at 30% 80%,#27b9a3 0 7%,transparent 7.5%);
+}
+.map svg.path { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.location {
+  position:absolute; z-index:2; width:135px; min-height:105px; background:#fff;
+  color:var(--ink); border:4px solid #ffd21f; border-radius:22px;
+  box-shadow:0 5px 0 #167f45; padding:10px 6px; font-weight:bold;
+}
+.location .emoji { display:block; font-size:2.3rem; margin-bottom:3px; }
+.location small { display:block; font-size:.72rem; margin-top:5px; font-weight:bold; }
+.location.done { background:#fff052; border-color:#ff7a24; }
+.location.locked { filter:grayscale(.5); opacity:.78; border-color:#d9d9d9; }
+#loc-plaza { left:4%; top:8%; }
+#loc-bosque { right:4%; top:27%; }
+#loc-taller { left:5%; bottom:8%; }
+#loc-teatro { right:4%; bottom:7%; }
+.map-character {
+  position:absolute; z-index:3; left:50%; top:49%;
+  transform:translate(-50%,-50%); width:125px; text-align:center; pointer-events:none;
+}
+.map-character .character-svg { width:120px; max-width:100%; }
+.map-character span {
+  display:inline-block; background:#fff52e; border:2px solid white;
+  border-radius:12px; padding:4px 8px; font-size:.75rem; font-weight:bold;
+}
+.map-decor { position:absolute; font-size:1.8rem; pointer-events:none; }
+.mission-panel { width:min(760px,100%); }
+.mission-tag { display:inline-block; padding:8px 13px; border-radius:20px; background:#ffdf3e; font-weight:bold; }
+.progress-track { height:12px; background:#e2e7de; border-radius:20px; overflow:hidden; margin:18px 0; }
+.progress-fill { height:100%; background:linear-gradient(90deg,#25c45b,#ffcf22); transition:width .25s; }
+.answers { display:grid; gap:12px; margin:20px 0; }
+.answer {
+  background:white; color:var(--ink); border:3px solid #dce9e5;
+  padding:15px; border-radius:15px; text-align:left; line-height:1.5;
+}
+.answer.correct { background:#dff5dd; border-color:#36bd65; }
+.answer.incorrect { background:#ffe7dc; border-color:#ff7a24; }
+.answer:disabled { cursor:default; transform:none; }
+.feedback { background:#e4f5e6; padding:15px; border-radius:15px; line-height:1.6; margin:12px 0; }
+.feedback:empty { display:none; }
+.reflection { background:#fff0ae; padding:20px; border-radius:18px; text-align:left; margin:20px 0; }
+.reflection-card { background:white; border-left:6px solid var(--green); border-radius:14px; padding:15px; margin:12px 0; line-height:1.65; }
+.result-score { color:var(--deep); font-size:3.2rem; font-weight:bold; }
+footer { text-align:center; color:#607c83; font-size:.85rem; margin-top:18px; line-height:1.6; }
+.fairy {
+  position:fixed; z-index:20; right:18px; bottom:18px; width:min(330px,calc(100vw - 36px));
+  background:#fff; border:4px solid #ffdf3e; border-radius:22px; padding:15px 16px 14px;
+  box-shadow:0 8px 0 #b58be8,0 12px 30px #17445b55; animation:fairyIn .45s ease-out;
+}
+.fairy-head { display:flex; align-items:center; gap:10px; }
+.fairy-icon { font-size:2.7rem; animation:float 1.7s ease-in-out infinite; }
+.fairy strong { color:#7438c2; }
+.fairy p { margin:8px 0 12px; }
+.fairy .secondary { padding:8px 12px; }
+.fairy-label { font-size:.7rem; font-weight:bold; letter-spacing:1px; color:#8652db; }
+@keyframes fairyIn {
+  from { transform:translate(25px,25px) scale(.75); opacity:0; }
+  to { transform:translate(0) scale(1); opacity:1; }
+}
+@keyframes float {
+  0%,100% { transform:translateY(0) rotate(-5deg); }
+  50% { transform:translateY(-6px) rotate(5deg); }
+}
+@media(max-width:520px) {
+  .custom-grid { grid-template-columns:1fr; }
+  .map { min-height:490px; }
+  .location { width:112px; min-height:95px; font-size:.9rem; }
+  .location .emoji { font-size:2rem; }
+  #loc-plaza { left:2%; top:7%; }
+  #loc-bosque { right:2%; top:27%; }
+  #loc-taller { left:2%; bottom:7%; }
+  #loc-teatro { right:2%; bottom:6%; }
+  .map-character { top:49%; width:100px; }
+  .map-character .character-svg { width:100px; }
+  .fairy { right:10px; bottom:10px; }
+}
+</style>
+</head>
+<body>
+
+<section id="home" class="screen active">
+<main class="panel center">
+  <div style="font-size:2rem;color:#e6b638">✦ ✧ ✦</div>
+  <div class="eyebrow">UNA AVENTURA POR UN MUNDO MEJOR</div>
+  <h1>La Aldea de<br>Luminaria</h1>
+  <p>Crea a tu viajera o viajero, explora la aldea y ayuda a sus habitantes a construir una comunidad más inclusiva y sostenible.</p>
+  <div class="hero">
+    <div class="character-stage" id="heroCharacter"></div>
+    <p>¡Este personaje es tuyo! Cambia su apariencia como quieras.</p>
+  </div>
+
+  <div class="customizer">
+    <h2>🎨 Diseña tu personaje</h2>
+    <p>Combina diferentes estilos hasta encontrar tu favorito.</p>
+    <div class="custom-grid">
+      <label>Peinado
+        <select id="hair">
+          <option value="pigtails">Dos coletas</option>
+          <option value="bob">Corte bob</option>
+          <option value="ponytail">Coleta alta</option>
+          <option value="long">Cabello largo</option>
+          <option value="curly">Cabello rizado</option>
+          <option value="short">Cabello corto</option>
+        </select>
+      </label>
+      <label>Expresión
+        <select id="face">
+          <option value="happy">Feliz</option>
+          <option value="neutral">Seria</option>
+          <option value="surprised">Sorprendida</option>
+          <option value="sad">Triste</option>
+          <option value="angry">Enojada</option>
+          <option value="sleepy">Cansada</option>
+        </select>
+      </label>
+      <label>Accesorio
+        <select id="accessory">
+          <option value="star">Estrella amarilla</option>
+          <option value="clips">Broches de colores</option>
+          <option value="flowers">Flores</option>
+          <option value="headphones">Audífonos</option>
+          <option value="glasses">Lentes</option>
+          <option value="none">Sin accesorio</option>
+        </select>
+      </label>
+      <label>Ropa
+        <select id="outfit">
+          <option value="starshirt">Sudadera con estrella</option>
+          <option value="overalls">Overol artístico</option>
+          <option value="hoodie">Sudadera con capucha</option>
+          <option value="dress">Vestido sencillo</option>
+          <option value="striped">Playera de rayas</option>
+        </select>
+      </label>
+    </div>
+
+    <h3>Tono de piel</h3>
+    <div class="color-options" id="skinOptions">
+      <button class="color-choice selected" data-skin="#f7d0b1" style="background:#f7d0b1" aria-label="Piel clara"></button>
+      <button class="color-choice" data-skin="#eab58e" style="background:#eab58e" aria-label="Piel media clara"></button>
+      <button class="color-choice" data-skin="#c98962" style="background:#c98962" aria-label="Piel morena"></button>
+      <button class="color-choice" data-skin="#8d593f" style="background:#8d593f" aria-label="Piel oscura"></button>
+      <button class="color-choice" data-skin="#f0c9b9" style="background:#f0c9b9" aria-label="Piel rosada"></button>
+    </div>
+
+    <h3>Color de cabello</h3>
+    <div class="color-options" id="hairOptions">
+      <button class="color-choice selected" data-hair="#17151b" style="background:#17151b" aria-label="Negro"></button>
+      <button class="color-choice" data-hair="#513125" style="background:#513125" aria-label="Castaño"></button>
+      <button class="color-choice" data-hair="#b66d3b" style="background:#b66d3b" aria-label="Pelirrojo"></button>
+      <button class="color-choice" data-hair="#edc95e" style="background:#edc95e" aria-label="Rubio"></button>
+      <button class="color-choice" data-hair="#8571c8" style="background:#8571c8" aria-label="Lila"></button>
+      <button class="color-choice" data-hair="#74b9ce" style="background:#74b9ce" aria-label="Azul"></button>
+    </div>
+
+    <h3>Color de ropa</h3>
+    <div class="color-options" id="clothesOptions">
+      <button class="color-choice selected" data-clothes="#17151b" style="background:#17151b" aria-label="Negro"></button>
+      <button class="color-choice" data-clothes="#19a8d2" style="background:#19a8d2" aria-label="Azul intenso"></button>
+      <button class="color-choice" data-clothes="#ff4f91" style="background:#ff4f91" aria-label="Rosa intenso"></button>
+      <button class="color-choice" data-clothes="#36bd65" style="background:#36bd65" aria-label="Verde intenso"></button>
+      <button class="color-choice" data-clothes="#8652db" style="background:#8652db" aria-label="Morado"></button>
+      <button class="color-choice" data-clothes="#ffd21f" style="background:#ffd21f" aria-label="Amarillo"></button>
+      <button class="color-choice" data-clothes="#e83232" style="background:#e83232" aria-label="Rojo"></button>
+    </div>
+  </div>
+
+  <button class="primary" onclick="startGame()">¡Entrar a Luminaria! ✨</button>
+  <footer>Proyecto educativo · Agenda 2030 · ODS 11: Ciudades y comunidades sostenibles.</footer>
+</main>
+</section>
+
+<section id="mapScreen" class="screen">
+<main style="width:min(1000px,100%)">
+  <div class="topbar">
+    <strong>🌟 La Aldea de Luminaria</strong>
+    <span class="stat">⭐ <span id="score">0</span> puntos</span>
+    <span class="stat">📜 <span id="count">0</span>/8</span>
+    <button class="secondary" onclick="goHome()">Personalizar</button>
+  </div>
+  <div class="panel" style="margin-bottom:15px">
+    <h2>¡Elige tu próximo destino!</h2>
+    <p>Completa dos misiones en cada lugar. ¡Una hada puede aparecer cuando menos lo esperes y darte una pista!</p>
+  </div>
+  <div class="map">
+    <svg class="path" viewBox="0 0 700 520" preserveAspectRatio="none" aria-label="Camino del mapa">
+      <path d="M110 90 C260 25 390 150 570 175 S520 300 350 305 S140 370 130 450 S400 480 575 430" fill="none" stroke="#ffcf24" stroke-width="29" stroke-linecap="round"/>
+      <path d="M110 90 C260 25 390 150 570 175 S520 300 350 305 S140 370 130 450 S400 480 575 430" fill="none" stroke="#f45b20" stroke-width="5" stroke-dasharray="9 12" stroke-linecap="round"/>
+    </svg>
+    <span class="map-decor" style="left:40%;top:10%">☁️</span>
+    <span class="map-decor" style="left:39%;top:25%">🌲</span>
+    <span class="map-decor" style="left:46%;top:72%">🌷</span>
+    <span class="map-decor" style="left:70%;top:65%">🌳</span>
+    <span class="map-decor" style="left:22%;top:58%">🌼</span>
+    <span class="map-decor" style="right:20%;top:7%">☀️</span>
+
+    <button class="location" id="loc-plaza" onclick="openLocation('plaza')">
+      <span class="emoji">🏘️</span>Plaza<small id="status-plaza">0/2 misiones</small>
+    </button>
+    <button class="location locked" id="loc-bosque" onclick="openLocation('bosque')">
+      <span class="emoji">🌳</span>Bosque<small id="status-bosque">🔒 Bloqueado</small>
+    </button>
+    <button class="location locked" id="loc-taller" onclick="openLocation('taller')">
+      <span class="emoji">🎨</span>Taller<small id="status-taller">🔒 Bloqueado</small>
+    </button>
+    <button class="location locked" id="loc-teatro" onclick="openLocation('teatro')">
+      <span class="emoji">🎭</span>Teatro<small id="status-teatro">🔒 Bloqueado</small>
+    </button>
+    <div class="map-character"><div id="mapCharacter"></div><span>¡Tú!</span></div>
+  </div>
+  <p class="center">🌱 Tus decisiones pueden transformar tu comunidad.</p>
+</main>
+</section>
+
+<section id="missionScreen" class="screen">
+<main class="panel mission-panel">
+  <span class="mission-tag" id="missionPlace">🏘️ Plaza</span>
+  <p id="missionNumber">Misión 1 de 2</p>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <h2 id="missionTitle"></h2>
+  <p id="missionStory"></p>
+  <h3>¿Qué decides hacer?</h3>
+  <div id="answers" class="answers"></div>
+  <div id="feedback" class="feedback" aria-live="polite"></div>
+  <button class="primary" id="nextButton" onclick="nextMission()" style="display:none">Continuar →</button>
+  <button class="secondary" onclick="showMap()">Volver al mapa</button>
+</main>
+</section>
+
+<section id="finalScreen" class="screen">
+<main class="panel center">
+  <div style="font-size:4rem" id="finalEmoji">🌟</div>
+  <h1 style="font-size:clamp(2.2rem,6vw,3.6rem)">¡Aventura completada!</h1>
+  <p>¡Has ayudado a los habitantes de Luminaria!</p>
+  <div class="hero">
+    <div class="result-score"><span id="finalScore">0</span>/80</div>
+    <p>Puntos obtenidos</p>
+    <strong id="finalMessage"></strong>
+    <p>Misiones completadas: 8 de 8</p>
+  </div>
+  <div class="reflection">
+    <h2>🌍 Tu reflexión sobre el ODS 11</h2>
+    <p>El Objetivo de Desarrollo Sostenible 11 busca ciudades y comunidades inclusivas, seguras, resilientes y sostenibles. Esta reflexión se genera a partir de las decisiones que tomaste durante la aventura.</p>
+    <div id="dynamicReflection" class="reflection-card"></div>
+    <h3>¿Qué cambio podrías hacer en tu escuela o colonia?</h3>
+    <textarea id="reflectionAnswer" rows="4" maxlength="500" placeholder="Escribe una idea que te gustaría poner en práctica..."></textarea>
+    <p id="reflectionStatus" aria-live="polite"></p>
+    <button class="secondary" onclick="saveReflection()">Guardar reflexión personal</button>
+    <p id="savedReflection"></p>
+  </div>
+  <button class="primary" onclick="restartGame()">Volver a jugar 🔄</button>
+  <button class="secondary" onclick="goHome()">Cambiar personaje</button>
+  <footer>La Aldea de Luminaria · Agenda 2030 · ODS 11</footer>
+</main>
+</section>
+
+<div id="fairy" class="fairy" role="dialog" aria-live="polite" aria-label="Consejo del hada" hidden>
+  <div class="fairy-head">
+    <div class="fairy-icon">🧚‍♀️</div>
+    <div><div class="fairy-label">APARECIÓ LUMI</div><strong>Lumi, el hada consejera</strong></div>
+  </div>
+  <p id="fairyText"></p>
+  <div style="text-align:right"><button class="secondary" onclick="closeFairy()">¡Gracias, Lumi! ✨</button></div>
+</div>
+
+<script>
+const avatar = {
+  skin:"#f7d0b1", hairColor:"#17151b", clothes:"#17151b",
+  hair:"pigtails", face:"happy", accessory:"star", outfit:"starshirt"
+};
+
+function svgCharacter() {
+  const s=avatar.skin, h=avatar.hairColor, c=avatar.clothes;
+  let hairstyle="";
+
+  if(avatar.hair==="pigtails") {
+    hairstyle=`<g fill="${h}">
+      <path d="M60 100 Q20 75 35 40 Q45 15 65 48 L72 77Z"/>
+      <path d="M140 100 Q180 75 165 40 Q155 15 135 48 L128 77Z"/>
+      <path d="M42 55 Q20 25 38 18 Q55 24 60 49Z"/>
+      <path d="M158 55 Q180 25 162 18 Q145 24 140 49Z"/>
+      <path d="M43 52 Q50 22 82 25 Q115 15 146 38 L151 100 L140 120 L60 120 L48 95Z"/>
+      <path d="M47 88 Q26 128 48 154 L63 160 L59 116Z"/>
+      <path d="M143 88 Q164 128 142 154 L127 160 L131 116Z"/>
+    </g>`;
+  } else if(avatar.hair==="bob") {
+    hairstyle=`<path fill="${h}" d="M35 95 Q25 20 100 20 Q175 20 165 95 L160 142 Q148 160 132 145 L137 86 Q105 110 75 82 L62 145 Q42 158 37 133Z"/>`;
+  } else if(avatar.hair==="ponytail") {
+    hairstyle=`<g fill="${h}">
+      <path d="M120 38 Q170 10 165 65 Q155 93 130 88Z"/>
+      <path d="M40 92 Q30 20 100 20 Q170 20 160 92 L150 125 L50 125Z"/>
+      <path d="M45 90 Q20 130 46 155 L62 130Z"/>
+      <path d="M140 85 Q165 105 150 137 L133 120Z"/>
+    </g>`;
+  } else if(avatar.hair==="long") {
+    hairstyle=`<path fill="${h}" d="M35 100 Q25 18 100 20 Q175 18 165 100 L170 185 L140 175 L145 83 L60 83 L55 175 L30 185Z"/>`;
+  } else if(avatar.hair==="curly") {
+    hairstyle=`<g fill="${h}">
+      <circle cx="48" cy="55" r="23"/><circle cx="70" cy="32" r="24"/>
+      <circle cx="100" cy="28" r="25"/><circle cx="130" cy="34" r="24"/>
+      <circle cx="153" cy="57" r="23"/>
+      <path d="M37 65 L42 140 L55 160 L65 95 L135 95 L145 160 L158 140 L163 65Z"/>
+    </g>`;
+  } else {
+    hairstyle=`<path fill="${h}" d="M35 100 Q25 20 100 20 Q175 20 165 100 L145 88 Q110 108 60 85 L48 118Z"/>`;
+  }
+
+  let eyes="", mouth="";
+  if(avatar.face==="happy") {
+    eyes=`<ellipse cx="70" cy="94" rx="13" ry="18" fill="#17151b"/>
+    <ellipse cx="130" cy="94" rx="13" ry="18" fill="#17151b"/>
+    <circle cx="74" cy="88" r="4" fill="white"/><circle cx="134" cy="88" r="4" fill="white"/>`;
+    mouth=`<path d="M86 121 Q100 137 114 121 Q100 145 86 121Z" fill="#a84e54"/>`;
+  } else if(avatar.face==="surprised") {
+    eyes=`<circle cx="70" cy="94" r="15" fill="white" stroke="#17151b" stroke-width="3"/>
+    <circle cx="130" cy="94" r="15" fill="white" stroke="#17151b" stroke-width="3"/>
+    <circle cx="72" cy="95" r="7" fill="#17151b"/><circle cx="132" cy="95" r="7" fill="#17151b"/>`;
+    mouth=`<ellipse cx="100" cy="126" rx="8" ry="11" fill="#17151b"/>`;
+  } else if(avatar.face==="sad") {
+    eyes=`<ellipse cx="70" cy="97" rx="13" ry="17" fill="#17151b"/>
+    <ellipse cx="130" cy="97" rx="13" ry="17" fill="#17151b"/>
+    <path d="M57 73 L81 80 M119 80 L143 73" stroke="#17151b" stroke-width="4" fill="none"/>`;
+    mouth=`<path d="M86 133 Q100 119 114 133" stroke="#a84e54" stroke-width="4" fill="none"/>
+    <path d="M55 105 Q48 115 55 122 Q62 115 55 105Z" fill="#19a8d2"/>`;
+  } else if(avatar.face==="angry") {
+    eyes=`<ellipse cx="70" cy="98" rx="13" ry="15" fill="#17151b"/>
+    <ellipse cx="130" cy="98" rx="13" ry="15" fill="#17151b"/>
+    <path d="M55 78 L82 87 M118 87 L145 78" stroke="#17151b" stroke-width="5" fill="none"/>`;
+    mouth=`<path d="M85 128 L115 128 L108 137 L92 137Z" fill="#17151b"/>`;
+  } else if(avatar.face==="sleepy") {
+    eyes=`<path d="M57 95 Q70 108 83 95 M117 95 Q130 108 143 95" stroke="#17151b" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+    mouth=`<path d="M92 128 Q100 132 108 128" stroke="#a84e54" stroke-width="4" fill="none"/>
+    <text x="140" y="65" font-size="17" fill="#17627f">z</text>`;
+  } else {
+    eyes=`<ellipse cx="70" cy="96" rx="12" ry="16" fill="#17151b"/>
+    <ellipse cx="130" cy="96" rx="12" ry="16" fill="#17151b"/>`;
+    mouth=`<path d="M90 130 L110 130" stroke="#a84e54" stroke-width="4" stroke-linecap="round"/>`;
+  }
+
+  let clothing="";
+  if(avatar.outfit==="dress") {
+    clothing=`<path d="M75 158 L125 158 L159 237 L41 237Z" fill="${c}" stroke="#344653" stroke-width="3"/>`;
+  } else if(avatar.outfit==="overalls") {
+    clothing=`<path d="M72 157 L128 157 L151 235 L49 235Z" fill="${c}" stroke="#344653" stroke-width="3"/>
+    <path d="M77 156 L83 187 L117 187 L123 156" fill="none" stroke="#344653" stroke-width="5"/>
+    <path d="M80 184 L120 184 L120 215 L80 215Z" fill="#19a8d2" stroke="#344653" stroke-width="2"/>`;
+  } else {
+    clothing=`<path d="M76 157 L124 157 L155 230 L45 230Z" fill="${c}" stroke="#344653" stroke-width="3"/>
+    ${avatar.outfit==="hoodie"?`<path d="M78 163 Q100 132 122 163" fill="none" stroke="#344653" stroke-width="6"/>`:""}
+    ${avatar.outfit==="striped"?`<path d="M58 193 L142 193 M52 211 L148 211" stroke="#fff9eb" stroke-width="8"/>`:""}
+    ${avatar.outfit==="starshirt"?`<path d="M100 177 L107 193 L124 194 L111 205 L115 222 L100 213 L85 222 L89 205 L76 194 L93 193Z" fill="#ffd21f"/>`:""}`;
+  }
+
+  let accessory="";
+  if(avatar.accessory==="star") {
+    accessory=`<path d="M133 39 L139 53 L154 54 L143 64 L146 79 L133 71 L120 79 L123 64 L112 54 L127 53Z" fill="#ffd21f" stroke="#e4b83c" stroke-width="2"/>`;
+  } else if(avatar.accessory==="clips") {
+    accessory=`<ellipse cx="135" cy="61" rx="8" ry="4" fill="#ff4f91" transform="rotate(-25 135 61)"/>
+    <ellipse cx="144" cy="69" rx="8" ry="4" fill="#19a8d2" transform="rotate(-25 144 69)"/>`;
+  } else if(avatar.accessory==="flowers") {
+    accessory=`<g transform="translate(135 51)">
+    <circle cy="-7" r="6" fill="#ff4f91"/><circle cx="7" cy="-2" r="6" fill="#ff4f91"/>
+    <circle cx="4" cy="6" r="6" fill="#ff4f91"/><circle cx="-5" cy="5" r="6" fill="#ff4f91"/>
+    <circle cx="-7" cy="-2" r="6" fill="#ff4f91"/><circle r="4" fill="#ffd21f"/></g>`;
+  } else if(avatar.accessory==="headphones") {
+    accessory=`<path d="M48 91 A52 52 0 0 1 152 91" fill="none" stroke="#ff4f91" stroke-width="9"/>
+    <rect x="42" y="86" width="13" height="27" rx="5" fill="#ff4f91"/>
+    <rect x="145" y="86" width="13" height="27" rx="5" fill="#ff4f91"/>`;
+  } else if(avatar.accessory==="glasses") {
+    accessory=`<g fill="none" stroke="#fff" stroke-width="4">
+    <circle cx="70" cy="96" r="19"/><circle cx="130" cy="96" r="19"/><path d="M89 96 L111 96"/></g>`;
+  }
+
+  return `<svg class="character-svg" viewBox="0 0 200 250" role="img" aria-label="Personaje personalizado">
+  <g>${hairstyle}</g>
+  <path d="M87 137 L87 165 L113 165 L113 137Z" fill="${s}" stroke="#344653" stroke-width="2"/>
+  ${clothing}
+  <path d="M57 177 L38 212 Q34 223 45 226 L65 199" fill="${c}" stroke="#344653" stroke-width="3"/>
+  <path d="M143 177 L162 212 Q166 223 155 226 L135 199" fill="${c}" stroke="#344653" stroke-width="3"/>
+  <path d="M49 67 Q49 32 100 32 Q151 32 151 67 L146 113 Q137 151 100 158 Q63 151 54 113Z" fill="${s}" stroke="#344653" stroke-width="2.5"/>
+  <ellipse cx="49" cy="100" rx="10" ry="15" fill="${s}" stroke="#344653" stroke-width="2"/>
+  <ellipse cx="151" cy="100" rx="10" ry="15" fill="${s}" stroke="#344653" stroke-width="2"/>
+  <path d="M48 82 Q36 27 100 25 Q165 24 153 83 Q131 68 115 61 Q100 83 72 72 L55 94Z" fill="${h}"/>
+  <path d="M57 76 Q69 69 81 76 M119 76 Q131 69 143 76" stroke="${h}" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  ${eyes}${mouth}
+  <ellipse cx="58" cy="115" rx="9" ry="5" fill="#ff7c91" opacity=".7"/>
+  <ellipse cx="142" cy="115" rx="9" ry="5" fill="#ff7c91" opacity=".7"/>
+  ${accessory}
+  <path d="M65 237 L135 237" stroke="#344653" stroke-width="3" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function renderCharacter() {
+  const drawing=svgCharacter();
+  document.getElementById("heroCharacter").innerHTML=drawing;
+  document.getElementById("mapCharacter").innerHTML=drawing;
+}
+
+function bindColors(id,prop,attr) {
+  document.querySelectorAll("#"+id+" .color-choice").forEach(b=>{
+    b.addEventListener("click",()=>{
+      avatar[prop]=b.dataset[attr];
+      document.querySelectorAll("#"+id+" .color-choice").forEach(x=>x.classList.remove("selected"));
+      b.classList.add("selected");
+      renderCharacter();
+    });
+  });
+}
+bindColors("skinOptions","skin","skin");
+bindColors("hairOptions","hairColor","hair");
+bindColors("clothesOptions","clothes","clothes");
+["hair","face","accessory","outfit"].forEach(id=>{
+  document.getElementById(id).addEventListener("change",e=>{
+    avatar[id]=e.target.value;
+    renderCharacter();
+  });
+});
+renderCharacter();
+
+const places = {
+  plaza:{
+    name:"Plaza",emoji:"🏘️",missions:[
+      {
+        title:"Una plaza para todos",
+        story:"Una vecina que utiliza silla de ruedas no puede llegar al jardín porque hay escaleras y caminos difíciles. ¿Qué propones?",
+        answers:[
+          ["Crear rampas accesibles y caminos seguros para todos.",10,"¡Excelente! La accesibilidad permite que más personas disfruten los espacios públicos en igualdad de condiciones."],
+          ["Dejar todo como está porque la mayoría puede entrar.",0,"Así se excluye a parte de la comunidad. Los espacios públicos deben considerar distintas necesidades."],
+          ["Hacer una entrada especial lejos de la plaza.",4,"Es un comienzo, pero conviene diseñar accesos integrados para que todas las personas compartan el mismo espacio."]
+        ]
+      },
+      {
+        title:"Vecinos en desacuerdo",
+        story:"Un grupo quiere organizar actividades culturales en la plaza, pero otros vecinos temen que haya demasiado ruido. ¿Cómo pueden resolverlo?",
+        answers:[
+          ["Dejar que el grupo más numeroso decida por todos.",2,"Es importante escuchar también a las personas afectadas y buscar acuerdos."],
+          ["Organizar una reunión y acordar actividades y horarios.",10,"¡Muy bien! El diálogo y la participación ciudadana ayudan a construir comunidades pacíficas."],
+          ["Cancelar todas las actividades.",4,"Evitar el problema no resuelve las necesidades. Un acuerdo puede favorecer la convivencia."]
+        ]
+      }
+    ]
+  },
+  bosque:{
+    name:"Bosque",emoji:"🌳",missions:[
+      {
+        title:"El bosque necesita respirar",
+        story:"Después de una fiesta, el bosque quedó lleno de botellas, envolturas y latas. ¿Qué haces?",
+        answers:[
+          ["Organizar una limpieza y separar los residuos.",10,"¡Excelente! Prevenir la contaminación ayuda a proteger los ecosistemas."],
+          ["Esconder la basura entre los arbustos.",0,"Ocultar los residuos no elimina la contaminación y puede dañar a los animales."],
+          ["Recoger solo lo que está junto al camino.",5,"Es un buen comienzo, pero hace falta un plan para atender otras zonas."]
+        ]
+      },
+      {
+        title:"Un camino más seguro",
+        story:"El camino que conecta el bosque con las casas está oscuro y tiene hoyos. ¿Qué medida sería más útil?",
+        answers:[
+          ["Recomendar que nadie salga por la noche.",2,"Limitar los horarios no resuelve los problemas de infraestructura."],
+          ["Instalar iluminación eficiente y reparar el camino.",10,"¡Correcto! La infraestructura segura favorece la movilidad y la calidad de vida."],
+          ["Pintar un mural sin reparar el camino.",4,"El arte puede mejorar el lugar, pero también deben atenderse los riesgos físicos."]
+        ]
+      }
+    ]
+  },
+  taller:{
+    name:"Taller",emoji:"🎨",missions:[
+      {
+        title:"Crear sin desperdiciar",
+        story:"En el taller se desechan cartón, telas y pinturas que todavía podrían aprovecharse. ¿Qué propones?",
+        answers:[
+          ["Reutilizar materiales y separar los residuos.",10,"¡Genial! Reutilizar materiales reduce los residuos y fomenta el consumo responsable."],
+          ["Tirar todo en el mismo contenedor.",0,"Mezclar los residuos dificulta su aprovechamiento."],
+          ["Guardar absolutamente todo sin clasificarlo.",4,"Conservar materiales puede ser útil, pero conviene organizarlos y evitar acumular basura."]
+        ]
+      },
+      {
+        title:"Un barrio con identidad",
+        story:"Quieren renovar una calle, pero el proyecto borraría murales y elementos históricos importantes. ¿Qué harías?",
+        answers:[
+          ["Demolerlo todo para que parezca moderno.",0,"Modernizar no debería significar ignorar la historia de la comunidad."],
+          ["Cancelar cualquier cambio para siempre.",4,"Es importante proteger el patrimonio, pero también se pueden realizar mejoras."],
+          ["Consultar a los vecinos y proteger el patrimonio.",10,"¡Excelente! La participación puede equilibrar las necesidades actuales y la conservación cultural."]
+        ]
+      }
+    ]
+  },
+  teatro:{
+    name:"Teatro",emoji:"🎭",missions:[
+      {
+        title:"Nadie se queda fuera",
+        story:"El teatro tiene escalones y no ofrece información accesible para personas con distintas discapacidades. ¿Qué deberían hacer?",
+        answers:[
+          ["Adaptar el acceso y ofrecer información accesible.",10,"¡Muy bien! La inclusión implica identificar y eliminar barreras."],
+          ["Invitar solo a quienes puedan entrar sin ayuda.",0,"La cultura debe ser accesible y no excluir a las personas por sus necesidades."],
+          ["Ofrecer una transmisión en línea sin adaptar el lugar.",5,"La transmisión amplía el acceso, pero también hay que mejorar el espacio físico."]
+        ]
+      },
+      {
+        title:"Una comunidad preparada",
+        story:"Durante una tormenta, el teatro podría servir como punto de encuentro, pero nadie sabe por dónde salir. ¿Qué harías?",
+        answers:[
+          ["Esperar a que ocurra una emergencia.",0,"Prepararse con anticipación permite reducir riesgos."],
+          ["Crear un plan, señalizar salidas y organizar simulacros.",10,"¡Correcto! La prevención fortalece la resiliencia de la comunidad."],
+          ["Cerrar el teatro cada vez que haya nubes.",2,"Es importante prevenir, pero hacen falta medidas planificadas según los riesgos."]
+        ]
+      }
+    ]
+  }
+};
+
+const fairyTips = [
+  "¡Psst! Antes de decidir, piensa: ¿esta opción ayuda a todas las personas o deja a alguien fuera?",
+  "Un consejo mágico: una comunidad mejora cuando escucha a quienes la habitan. ¿Podrían dialogar?",
+  "¡Brillito de sabiduría! Piensa también en el futuro: ¿esta decisión cuida el ambiente y los recursos?",
+  "Recuerda que la seguridad y la accesibilidad son importantes para personas de distintas edades y capacidades.",
+  "¡Tú puedes! Busca una solución que sea justa, práctica y que beneficie a la comunidad, no solo a una persona.",
+  "Las mejores ideas a veces se construyen en equipo. ¿Quiénes deberían participar en esta decisión?",
+  "Una ciudad sostenible no solo se ve bonita: también debe ser segura, inclusiva y cuidar su patrimonio."
+];
+
+let currentPlace="plaza", missionIndex=0, totalScore=0;
+let completed={}, unlockedIndex=0, answered=false;
+let fairyTimer=null, fairyShownForMission=false, decisionLog=[];
+const order=["plaza","bosque","taller","teatro"];
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+function startGame() {
+  totalScore=0; unlockedIndex=0; completed={}; decisionLog=[];
+  order.forEach(k=>completed[k]=[]);
+  updateStats(); updateMap(); renderCharacter(); closeFairy(); showScreen("mapScreen");
+}
+function goHome() { closeFairy(); showScreen("home"); }
+function updateStats() {
+  document.getElementById("score").textContent=totalScore;
+  document.getElementById("count").textContent=order.reduce((n,k)=>n+completed[k].length,0);
+}
+function updateMap() {
+  order.forEach((k,i)=>{
+    let done=completed[k].length===2, unlocked=i<=unlockedIndex;
+    let b=document.getElementById("loc-"+k);
+    b.classList.toggle("done",done);
+    b.classList.toggle("locked",!unlocked);
+    document.getElementById("status-"+k).textContent=done?"✓ Completado":unlocked?completed[k].length+"/2 misiones":"🔒 Bloqueado";
+  });
+}
+function openLocation(k) {
+  if(order.indexOf(k)>unlockedIndex) {
+    alert("Completa primero las misiones del lugar anterior. 🌱"); return;
+  }
+  if(completed[k].length===2) {
+    alert("¡Ya completaste este lugar! Puedes seguir explorando. ✨"); return;
+  }
+  currentPlace=k; missionIndex=completed[k].length; renderMission(); showScreen("missionScreen");
+}
+function renderMission() {
+  answered=false; fairyShownForMission=false;
+  const p=places[currentPlace], m=p.missions[missionIndex];
+  document.getElementById("missionPlace").textContent=p.emoji+" "+p.name;
+  document.getElementById("missionNumber").textContent="Misión "+(missionIndex+1)+" de 2";
+  document.getElementById("missionTitle").textContent=m.title;
+  document.getElementById("missionStory").textContent=m.story;
+  const done=order.reduce((n,k)=>n+completed[k].length,0);
+  document.getElementById("progressFill").style.width=(done/8*100)+"%";
+  document.getElementById("feedback").textContent="";
+  document.getElementById("nextButton").style.display="none";
+  const box=document.getElementById("answers");
+  box.innerHTML="";
+  m.answers.forEach((a,i)=>{
+    const b=document.createElement("button");
+    b.className="answer";
+    b.textContent=String.fromCharCode(65+i)+") "+a[0];
+    b.onclick=()=>chooseAnswer(i);
+    box.appendChild(b);
+  });
+  closeFairy(); scheduleFairy();
+}
+function scheduleFairy() {
+  clearTimeout(fairyTimer);
+  if(Math.random()<0.72) {
+    fairyTimer=setTimeout(()=>{
+      if(document.getElementById("missionScreen").classList.contains("active")&&!answered&&!fairyShownForMission) {
+        showFairy(fairyTips[Math.floor(Math.random()*fairyTips.length)]);
+        fairyShownForMission=true;
+      }
+    },1800+Math.random()*2800);
+  }
+}
+function showFairy(message) {
+  document.getElementById("fairyText").textContent=message;
+  document.getElementById("fairy").hidden=false;
+}
+function closeFairy() {
+  clearTimeout(fairyTimer);
+  document.getElementById("fairy").hidden=true;
+}
+
+function chooseAnswer(i) {
+  if(answered) return;
+  answered=true;
+  clearTimeout(fairyTimer);
+  const m=places[currentPlace].missions[missionIndex], a=m.answers[i];
+  totalScore+=a[1];
+  completed[currentPlace].push({points:a[1],choice:a[0],title:m.title});
+  decisionLog.push({place:places[currentPlace].name,title:m.title,choice:a[0],points:a[1]});
+
+  document.querySelectorAll(".answer").forEach((b,j)=>{
+    b.disabled=true;
+    if(j===i) b.classList.add(a[1]>=8?"correct":"incorrect");
+  });
+  document.getElementById("feedback").textContent=a[2]+" +"+a[1]+" puntos.";
+  document.getElementById("nextButton").style.display="inline-block";
+  updateStats(); updateMap();
+
+  const correctiveTips = [
+    "Mmm, esta opción podría dejar a alguien fuera. ¿Qué pasaría si escucharas a las personas afectadas antes de decidir?",
+    "¡Pausa de alas! Esta solución no atiende el problema de fondo. Intenta pensar en una alternativa que sea segura y justa para más personas.",
+    "No pasa nada por equivocarse, pero vale la pena revisar las consecuencias: ¿esta decisión cuida el ambiente y los recursos a largo plazo?",
+    "Creo que podemos hacerlo mejor. ¿Hay una opción que resuelva el problema sin excluir a nadie ni trasladárselo a otra persona?",
+    "¡Te dejo una pregunta para pensar! ¿Quién se beneficia con esta decisión y quién podría salir perjudicado?",
+    "Esta vez no parece la solución más sostenible. Busca una idea que combine prevención, colaboración y cuidado de la comunidad."
+  ];
+  const thoughtfulTips = [
+    "Vas por buen camino, aunque todavía hay detalles que podrías mejorar. ¿Cómo harías que esta solución funcionara para más personas?",
+    "Buena intención. Ahora piensa cómo llevarla a la práctica de forma segura y sostenible.",
+    "Es un comienzo útil. ¿Con quién podrías colaborar para que la idea tenga un efecto más duradero?"
+  ];
+  const positiveTips = [
+    "¡Esta decisión sí ayuda a construir una comunidad más inclusiva y sostenible! ✨",
+    "¡Me gusta cómo pensaste en el bienestar común! Recuerda que escuchar a la comunidad también hace la diferencia.",
+    "¡Buena elección! La accesibilidad, la prevención y el cuidado de los espacios públicos ayudan a que nadie se quede atrás."
+  ];
+
+  let tip;
+  if(a[1]<=2) tip=correctiveTips[Math.floor(Math.random()*correctiveTips.length)];
+  else if(a[1]<=5) tip=thoughtfulTips[Math.floor(Math.random()*thoughtfulTips.length)];
+  else tip=positiveTips[Math.floor(Math.random()*positiveTips.length)];
+
+  if(Math.random()<0.88) setTimeout(()=>showFairy(tip),350);
+}
+
+function nextMission() {
+  if(!answered) return;
+  closeFairy();
+  if(completed[currentPlace].length<2) {
+    missionIndex++; renderMission(); return;
+  }
+  const i=order.indexOf(currentPlace);
+  if(i<order.length-1) {
+    unlockedIndex=Math.max(unlockedIndex,i+1);
+    updateMap(); showScreen("mapScreen");
+    if(Math.random()<0.5) {
+      setTimeout(()=>showFairy("¡Has desbloqueado "+places[order[i+1]].name+"! Sigue explorando y piensa en cómo tus decisiones pueden ayudar a toda la comunidad."),350);
+    }
+  } else {
+    finishGame();
+  }
+}
+function showMap() { closeFairy(); updateMap(); showScreen("mapScreen"); }
+
+function makeReflection() {
+  const good=decisionLog.filter(x=>x.points>=8);
+  const low=decisionLog.filter(x=>x.points<=4);
+  const themes={
+    "Plaza":{
+      good:"En la plaza elegiste soluciones que favorecen la accesibilidad y el diálogo.",
+      low:"En las situaciones de la plaza, puedes seguir reflexionando sobre cómo escuchar a los vecinos y hacer que los espacios sean accesibles.",
+      mid:"En la plaza reconociste algunos problemas, aunque todavía hay oportunidades para incluir a más personas y llegar a acuerdos."
+    },
+    "Bosque":{
+      good:"En el bosque valoraste el cuidado ambiental y la seguridad de los caminos.",
+      low:"En el bosque puedes pensar más en cómo prevenir la contaminación y mejorar la infraestructura sin excluir a nadie.",
+      mid:"Tus decisiones en el bosque muestran que cuidar el ambiente y la seguridad requiere pensar en soluciones más completas."
+    },
+    "Taller":{
+      good:"En el taller consideraste la reutilización de materiales y la protección del patrimonio cultural.",
+      low:"En el taller puedes profundizar en la reducción de residuos y en la importancia de conservar la identidad de la comunidad.",
+      mid:"En el taller viste que los materiales y el patrimonio importan; el siguiente paso es combinar creatividad y sostenibilidad."
+    },
+    "Teatro":{
+      good:"En el teatro tuviste en cuenta la inclusión, la accesibilidad y la preparación ante emergencias.",
+      low:"En el teatro puedes pensar cómo garantizar que todas las personas participen y que la comunidad esté preparada ante riesgos.",
+      mid:"Tus decisiones en el teatro muestran que la inclusión y la seguridad necesitan planificación."
+    }
+  };
+  let lines=[];
+  order.forEach(k=>{
+    const name=places[k].name;
+    const items=decisionLog.filter(x=>x.place===name);
+    if(!items.length) return;
+    const pts=items.reduce((s,x)=>s+x.points,0);
+    const level=pts>=16?"good":pts<=6?"low":"mid";
+    lines.push(themes[name][level]);
+  });
+  let intro=totalScore>=65
+    ?"Tus decisiones muestran un compromiso sólido con una comunidad inclusiva, segura y sostenible."
+    :totalScore>=40
+    ?"Reconociste varias maneras de mejorar Luminaria. Algunas decisiones fueron acertadas y otras te ofrecen oportunidades para aprender."
+    :"Esta aventura te deja preguntas importantes: construir una comunidad sostenible requiere pensar en las consecuencias de nuestras decisiones y en las personas afectadas.";
+  let conclusion=good.length>=6
+    ?"En la mayoría de las situaciones elegiste alternativas que apoyan el bienestar común."
+    :low.length>=4
+    ?"Varias elecciones pueden revisarse: piensa quién podría quedar fuera, qué impacto tendría la decisión y si existe una solución más justa."
+    :"En algunas situaciones encontraste soluciones útiles; puedes seguir practicando cómo comparar opciones y sus consecuencias.";
+  return intro+" "+conclusion+" "+lines.join(" ");
+}
+
+function finishGame() {
+  document.getElementById("finalScore").textContent=totalScore;
+  let msg,emoji;
+  if(totalScore>=72) {
+    msg="¡Tus decisiones reflejan un gran compromiso con la comunidad!"; emoji="🏆";
+  } else if(totalScore>=52) {
+    msg="¡Gran trabajo! Has encontrado muchas formas de mejorar tu comunidad."; emoji="🌈";
+  } else if(totalScore>=30) {
+    msg="¡Buen comienzo! Cada decisión es una oportunidad para aprender."; emoji="🌱";
+  } else {
+    msg="¡Seguir aprendiendo también es parte de la aventura!"; emoji="🌼";
+  }
+  document.getElementById("finalMessage").textContent=msg;
+  document.getElementById("finalEmoji").textContent=emoji;
+  document.getElementById("dynamicReflection").textContent=makeReflection();
+  showScreen("finalScreen");
+}
+function saveReflection() {
+  const a=document.getElementById("reflectionAnswer").value.trim();
+  const s=document.getElementById("reflectionStatus");
+  if(!a) { s.textContent="Escribe tu reflexión antes de guardarla."; return; }
+  document.getElementById("savedReflection").textContent="Tu reflexión personal: "+a;
+  s.textContent="¡Tu reflexión quedó registrada en esta partida!";
+}
+function restartGame() {
+  document.getElementById("reflectionAnswer").value="";
+  document.getElementById("reflectionStatus").textContent="";
+  document.getElementById("savedReflection").textContent="";
+  startGame();
+}
+</script>
+</body>
+</html>
